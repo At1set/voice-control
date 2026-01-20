@@ -1,0 +1,47 @@
+body {
+  background-color: #212121;
+}
+
+.root {
+  color: white;
+  padding: 20px 5px;
+
+  h1 {
+    text-align: center;
+  }
+
+  .commandLine {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+
+    span {
+      color: rgb(179, 179, 179);
+    }
+
+    span:first-child {
+      flex: 0 0 auto;
+      min-width: 30px;
+    }
+
+    span:not(:first-child) {
+      margin-top: 5px;
+    }
+
+    span:last-child {
+      position: relative;
+      padding-left: 10px;
+
+      &::before {
+        content: "";
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 2px;
+        background-color: rgb(130, 130, 130);
+      }
+    }
+  }
+}

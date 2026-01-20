@@ -1,4 +1,5 @@
 import { defineManifest } from '@crxjs/vite-plugin';
+
 import pkg from './package.json';
 
 export default defineManifest({
@@ -9,8 +10,18 @@ export default defineManifest({
 		default_popup: 'src/popup/index.html',
 		default_title: 'Описание расширения...',
 	},
+	side_panel: {
+		default_path: 'src/side-panel/index.html',
+	},
 	background: {
-		service_worker: 'src/background/index.ts',
+		service_worker: 'src/background/background.ts',
 		type: 'module',
 	},
+	permissions: ['activeTab', 'storage', 'scripting', 'sidePanel'],
+	content_scripts: [
+		{
+			matches: ['<all_urls>'],
+			js: ['src/content-scripts/main.tsx'],
+		},
+	],
 });

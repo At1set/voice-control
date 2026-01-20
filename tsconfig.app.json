@@ -26,8 +26,8 @@
 
 		"paths": {
 			"@/*": ["./src/*"],
-			"@images": ["./src/shared/assets/images/index.ts"],
-			"@icons": ["./src/shared/assets/icons/index.ts"]
+			"@images": ["./src/lib/shared/assets/images/index.ts"],
+			"@icons": ["./src/lib/shared/assets/icons/index.ts"]
 		}
 	},
 	"include": ["src"]

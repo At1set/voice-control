@@ -1,0 +1,149 @@
+import { EventTypes } from './model/EventTypes';
+
+// this runs when the extension is installed or updated
+chrome.runtime.onInstalled.addListener((details) => {
+	console.log('Welcome to chrome ext voice control. Have a nice day!');
+	if (details.reason === 'install') {
+		// chrome.tabs.create({ url: 'CUSTOM GREETING PAGE URL' });
+		chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+	}
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+	if (message?.type === 'isPopupOpen') {
+		chrome.tabs.update({}, async (tab) => {
+			if (!tab?.id) return;
+			chrome.tabs.sendMessage(tab.id, message);
+		});
+	}
+});
+
+function initBadge() {
+	chrome.storage.local.get('isRecording', ({ isRecording }) => {
+		// если значение уже есть, не трогаем
+		if (typeof isRecording === 'undefined') {
+			chrome.storage.local.set({ isRecording: false });
+		}
+	});
+
+	chrome.action.setBadgeText({ text: '' });
+	chrome.action.setBadgeBackgroundColor({ color: '#2bd1ff' });
+}
+initBadge();
+
+let lastActiveTabId: number | null = null;
+let lastWindowId: number | null = null;
+
+/**
+ * Обновить активную вкладку
+ */
+function updateTabs({ tabId, windowId }: { tabId: number; windowId?: number }) {
+	// уведомляем старую вкладку
+	if (lastActiveTabId !== null) {
+		console.log('Отправлен запрос на СТАРУЮ вкладку');
+
+		chrome.tabs.sendMessage(lastActiveTabId, {
+			type: EventTypes.ACTIVE_TAB_CHANGED,
+			data: {
+				isActive: false,
+			},
+		});
+	}
+
+	console.log('Отправлен запрос на НОВУЮ вкладку');
+	// уведомляем новую вкладку
+	chrome.tabs.sendMessage(tabId, {
+		type: EventTypes.ACTIVE_TAB_CHANGED,
+		data: {
+			isActive: true,
+		},
+	});
+
+	lastActiveTabId = tabId;
+	if (typeof windowId !== 'undefined') lastWindowId = windowId;
+}
+
+chrome.tabs.onActivated.addListener(({ tabId, windowId }) => updateTabs({ tabId, windowId }));
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+	if (changeInfo.status === 'complete' && tab.active) {
+		updateTabs({ tabId, windowId: tab.windowId });
+
+		chrome.sidePanel.setOptions({
+			tabId: lastActiveTabId!,
+			enabled: true,
+		});
+		chrome.sidePanel.open({ tabId: lastActiveTabId! });
+	}
+});
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+	if (msg.type === EventTypes.GET_ACTIVE_TAB) {
+		console.log(`Получен запрос на получение активной вкладки: ${sender.tab?.id}`);
+
+		sendResponse({
+			isActive: sender.tab?.id === lastActiveTabId,
+		});
+	} else if (msg.action === 'OPEN_SIDE_PANEL') {
+		if (lastWindowId) {
+			chrome.sidePanel.open({
+				windowId: lastWindowId,
+			});
+		}
+	}
+});
+
+chrome.storage.local.onChanged.addListener((changes) => {
+	console.log('[storage change]', 'changes:', changes, 'stack:', new Error().stack);
+	if (changes.isRecording) {
+		const isRecording = changes.isRecording.newValue as boolean;
+		chrome.action.setBadgeText({ text: isRecording ? 'ON' : '' });
+
+		if (lastActiveTabId) {
+			chrome.sidePanel.setOptions({
+				tabId: lastActiveTabId,
+				enabled: isRecording,
+			});
+		}
+	}
+});
+
+function goPrevTab() {
+	if (lastActiveTabId == null || lastWindowId == null) return;
+
+	chrome.tabs.query({ windowId: lastWindowId }, (tabs) => {
+		const index = tabs.findIndex((t) => t.id === lastActiveTabId);
+		if (index === -1) return;
+
+		const prevTab = tabs[index - 1] ?? tabs[tabs.length - 1]; // зацикливание
+		if (!prevTab.id) return;
+
+		chrome.tabs.update(prevTab.id, { active: true });
+	});
+}
+
+function goNextTab() {
+	if (lastActiveTabId == null || lastWindowId == null) return;
+
+	chrome.tabs.query({ windowId: lastWindowId }, (tabs) => {
+		const index = tabs.findIndex((t) => t.id === lastActiveTabId);
+		if (index === -1) return;
+
+		const nextTab = tabs[index + 1] ?? tabs[0];
+		if (nextTab.id) {
+			chrome.tabs.update(nextTab.id, { active: true });
+		}
+	});
+}
+
+chrome.runtime.onMessage.addListener((msg) => {
+	switch (msg.action) {
+		case EventTypes.GO_PREV_TAB:
+			goPrevTab();
+			return;
+
+		case EventTypes.GO_NEXT_TAB:
+			goNextTab();
+			return;
+	}
+});
