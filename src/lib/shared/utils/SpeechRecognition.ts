@@ -11,7 +11,7 @@ export const SpeechRecognition =
 		}
 	).webkitSpeechRecognition;
 
-export let speechRecognition: ISpeechRecognition | undefined;
+export let speechRecognition: SpeechRecognition | undefined;
 
 if (SpeechRecognition) {
 	speechRecognition = new SpeechRecognition();

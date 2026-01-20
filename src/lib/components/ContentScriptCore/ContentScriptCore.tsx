@@ -11,9 +11,19 @@ export const ContentScriptCore: FC = () => {
 	const [isRecording, setRecording] = useRecordingState();
 	const [recognizedText, setRecognisedText] = useState('');
 
+	console.log(isRecording);
+
 	useEffect(() => {
-		if (isRecording) speechRecognition?.start();
-		else speechRecognition?.stop();
+		if (!speechRecognition) return;
+		try {
+			if (isRecording) speechRecognition.start();
+			else {
+				speechRecognition.onend = null;
+				speechRecognition.stop();
+			}
+		} catch (error) {
+			console.warn(error);
+		}
 	}, [isRecording]);
 
 	useEffect(() => {
@@ -27,12 +37,15 @@ export const ContentScriptCore: FC = () => {
 			async function restart() {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const { isRecording } = (await chrome.storage.local.get(['isRecording'])) as any;
-				if (isRecording) speechRecognition?.start();
+				if (isRecording) {
+					console.log('Перезапуск распознавания голоса...');
+					speechRecognition?.start();
+				}
 			}
 			restart();
 		};
 
-		const onerror = (event: SpeechRecognitionErrorEvent) => {
+		const onerror = (_event: SpeechRecognitionErrorEvent) => {
 			console.log('Распознавание остановлено');
 		};
 

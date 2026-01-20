@@ -5,7 +5,6 @@ chrome.runtime.onInstalled.addListener((details) => {
 	console.log('Welcome to chrome ext voice control. Have a nice day!');
 	if (details.reason === 'install') {
 		// chrome.tabs.create({ url: 'CUSTOM GREETING PAGE URL' });
-		chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 	}
 });
 
@@ -65,15 +64,13 @@ function updateTabs({ tabId, windowId }: { tabId: number; windowId?: number }) {
 
 chrome.tabs.onActivated.addListener(({ tabId, windowId }) => updateTabs({ tabId, windowId }));
 
+// ==== ПРИ ОБНОВЛЕНИИ ВКЛАДКИ ==== //
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	if (changeInfo.status === 'complete' && tab.active) {
 		updateTabs({ tabId, windowId: tab.windowId });
-
-		chrome.sidePanel.setOptions({
-			tabId: lastActiveTabId!,
-			enabled: true,
+		chrome.storage.local.get('isRecording', ({ isRecording }) => {
+			if (isRecording) tryOpenSidePanel({ tabId: lastActiveTabId, windowId: lastWindowId });
 		});
-		chrome.sidePanel.open({ tabId: lastActiveTabId! });
 	}
 });
 
@@ -84,13 +81,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 		sendResponse({
 			isActive: sender.tab?.id === lastActiveTabId,
 		});
-	} else if (msg.action === 'OPEN_SIDE_PANEL') {
-		if (lastWindowId) {
-			chrome.sidePanel.open({
-				windowId: lastWindowId,
-			});
-		}
-	}
+	} else if (msg.action === 'OPEN_SIDE_PANEL')
+		tryOpenSidePanel({ tabId: lastActiveTabId, windowId: lastWindowId });
 });
 
 chrome.storage.local.onChanged.addListener((changes) => {
@@ -98,13 +90,6 @@ chrome.storage.local.onChanged.addListener((changes) => {
 	if (changes.isRecording) {
 		const isRecording = changes.isRecording.newValue as boolean;
 		chrome.action.setBadgeText({ text: isRecording ? 'ON' : '' });
-
-		if (lastActiveTabId) {
-			chrome.sidePanel.setOptions({
-				tabId: lastActiveTabId,
-				enabled: isRecording,
-			});
-		}
 	}
 });
 
@@ -129,11 +114,30 @@ function goNextTab() {
 		const index = tabs.findIndex((t) => t.id === lastActiveTabId);
 		if (index === -1) return;
 
-		const nextTab = tabs[index + 1] ?? tabs[0];
+		const nextTab = tabs[index + 1] ?? tabs[0]; // зацикливание
 		if (nextTab.id) {
 			chrome.tabs.update(nextTab.id, { active: true });
 		}
 	});
+}
+
+async function tryOpenSidePanel(
+	{
+		windowId,
+		tabId,
+	}: {
+		windowId: number | null;
+		tabId: number | null;
+	},
+	onerror?: (error: unknown) => void,
+) {
+	if (windowId === null || tabId === null) return;
+	try {
+		await chrome.sidePanel.open({ windowId });
+	} catch (e) {
+		console.warn('Не удалось открыть боковую панель: ', e);
+		onerror?.(e);
+	}
 }
 
 chrome.runtime.onMessage.addListener((msg) => {

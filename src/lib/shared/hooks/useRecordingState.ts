@@ -4,7 +4,7 @@ export function useRecordingState(initialState: boolean | (() => boolean) = fals
 	const [isRecording, setRecording] = useState(initialState);
 
 	useEffect(() => {
-		chrome.storage.local.get(['isRecording'], ({ isRecording }: { isRecording: boolean }) => {
+		chrome.storage.local.get('isRecording', ({ isRecording }: { isRecording: boolean }) => {
 			setRecording(isRecording);
 		});
 		chrome.storage.local.onChanged.addListener((changes) => {
