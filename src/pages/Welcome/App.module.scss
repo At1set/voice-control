@@ -1,0 +1,71 @@
+.wrapper {
+  max-width: 500px;
+  padding: 0 20px;
+  margin: 0 auto;
+}
+
+.logo {
+  padding-top: 20px;
+  max-width: 220px;
+  margin: 0 auto;
+
+  h1 {
+    display: block;
+    text-align: center;
+
+  }
+
+  .version {
+    font-size: 10px;
+    display: block;
+    text-align: right;
+    margin-top: 5px;
+  }
+}
+
+.premissions {
+  margin-top: 30px;
+  font-size: 18px;
+
+  p:not(:first-child) {
+    margin-top: 10px;
+  }
+
+  button {
+    font-size: 16px;
+    border: 1px solid rgb(105, 105, 105);
+    border-radius: 3px;
+    padding: 3px;
+
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.342);
+  }
+
+  &__buttonBox {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+
+    button {
+      margin-right: 10px;
+    }
+
+    label input {
+      margin-left: 10px;
+      position: relative;
+    }
+  }
+}
+
+.results {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+
+  p {
+    padding-right: 10px;
+  }
+
+  button {
+    padding: 3px 6px;
+  }
+}

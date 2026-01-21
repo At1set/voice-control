@@ -5,9 +5,18 @@ body {
 .root {
   color: white;
   padding: 20px 5px;
+  padding-top: 60px;
 
   h1 {
     text-align: center;
+    display: block;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background-color: #212121;
+    z-index: 999;
+    padding: 10px 0;
   }
 
   .commandLine {

@@ -30,5 +30,5 @@
 			"@icons": ["./src/lib/shared/assets/icons/index.ts"]
 		}
 	},
-	"include": ["src"]
+	"include": ["src", "src/lib/components/SpeechRecognizer/ui/SpeechRecognizer.tsx"]
 }

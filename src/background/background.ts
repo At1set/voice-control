@@ -7,32 +7,42 @@ let lastWindowId: number | null = null;
 chrome.runtime.onInstalled.addListener((details) => {
 	console.log('Welcome to chrome ext voice control. Have a nice day!');
 	if (details.reason === 'install') {
-		// chrome.tabs.create({ url: 'CUSTOM GREETING PAGE URL' });
+		chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/Welcome/index.html') });
 	}
 });
 
 chrome.runtime.onMessage.addListener((message) => {
+	if (!lastActiveTabId) return;
 	if (message?.type === 'isPopupOpen') {
 		chrome.tabs.update({}, async (tab) => {
 			if (!tab?.id) return;
 			chrome.tabs.sendMessage(tab.id, message);
 		});
-	}
+	} else if (message.forContentScript) chrome.tabs.sendMessage(lastActiveTabId, message);
 });
 
 initBadge();
 
-chrome.tabs.onActivated.addListener(({ tabId, windowId }) => updateTabs({ tabId, windowId }));
+// ====================== ВКЛАДКИ ====================== //
+// ==== ПРИ СМЕНЕ ВКЛАДКИ ==== //
+chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
+	updateTabs({ tabId, windowId });
+	allowMicrophoneOnSite();
+});
 
 // ==== ПРИ ОБНОВЛЕНИИ ВКЛАДКИ ==== //
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	if (changeInfo.status === 'complete' && tab.active) {
 		updateTabs({ tabId, windowId: tab.windowId });
 		chrome.storage.local.get('isRecording', ({ isRecording }) => {
-			if (isRecording) tryOpenSidePanel({ tabId: lastActiveTabId, windowId: lastWindowId });
+			if (isRecording) {
+				tryOpenSidePanel({ tabId: lastActiveTabId, windowId: lastWindowId });
+				allowMicrophoneOnSite();
+			}
 		});
 	}
 });
+// ====================== ВКЛАДКИ ====================== //
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	if (msg.type === EventTypes.GET_ACTIVE_TAB) {
@@ -72,10 +82,10 @@ function initBadge() {
 		if (typeof isRecording === 'undefined') {
 			chrome.storage.local.set({ isRecording: false });
 		}
-	});
 
-	chrome.action.setBadgeText({ text: '' });
-	chrome.action.setBadgeBackgroundColor({ color: '#2bd1ff' });
+		chrome.action.setBadgeText({ text: isRecording ? 'ON' : '' });
+		chrome.action.setBadgeBackgroundColor({ color: '#2bd1ff' });
+	});
 }
 
 /**
