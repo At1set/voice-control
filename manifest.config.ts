@@ -17,7 +17,7 @@ export default defineManifest({
 		service_worker: 'src/background/background.ts',
 		type: 'module',
 	},
-	permissions: ['activeTab', 'storage', 'scripting', 'sidePanel'],
+	permissions: ['activeTab', 'storage', 'scripting', 'sidePanel', 'contentSettings'],
 	content_scripts: [
 		{
 			matches: ['<all_urls>'],
